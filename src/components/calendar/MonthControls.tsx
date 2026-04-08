@@ -3,8 +3,9 @@ export default function MonthControls(props: {
   year: number;
   onMonthYearChange: (month: number, year: number) => void;
   onClearSelection: () => void;
+  controlsDisabled?: boolean;
 }) {
-  const { month, year, onMonthYearChange, onClearSelection } = props;
+  const { month, year, onMonthYearChange, onClearSelection, controlsDisabled } = props;
 
   const MONTHS = [
     "JANUARY",
@@ -31,6 +32,7 @@ export default function MonthControls(props: {
           onChange={e => onMonthYearChange(Number(e.target.value), year)}
           className="text-xs rounded border border-input bg-card px-2 py-1 font-display font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
           aria-label="Select month"
+          disabled={controlsDisabled}
         >
           {MONTHS.map((label, idx) => (
             <option key={label} value={idx}>
@@ -44,6 +46,7 @@ export default function MonthControls(props: {
           onChange={e => onMonthYearChange(month, Number(e.target.value))}
           className="text-xs rounded border border-input bg-card px-2 py-1 font-display font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
           aria-label="Select year"
+          disabled={controlsDisabled}
         >
           {yearOptions.map(y => (
             <option key={y} value={y}>

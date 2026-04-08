@@ -4,6 +4,19 @@ import { toDateKey } from "@/lib/calendar";
 import HeroSection from "@/components/calendar/HeroSection";
 import NotesPanel from "@/components/calendar/NotesPanel";
 import MonthControls from "@/components/calendar/MonthControls";
+import januaryHero from "@/assets/calendar-hero-jan.png";
+import februaryHero from "@/assets/calendar-hero-feb.png";
+import marchHero from "@/assets/calendar-hero-mar.png";
+import aprilHero from "@/assets/calendar-hero-apr.png";
+import mayHero from "@/assets/calendar-hero-may.png";
+import juneHero from "@/assets/calendar-hero-jun.png";
+import julyHero from "@/assets/calendar-hero-jul.png";
+import augustHero from "@/assets/calendar-hero-aug.png";
+import septemberHero from "@/assets/calendar-hero-sep.png";
+import octoberHero from "@/assets/calendar-hero-oct.png";
+import novemberHero from "@/assets/calendar-hero-nov.png";
+import decemberHero from "@/assets/calendar-hero-dec.png";
+import bottomLogo from "@/assets/calendar-bottom-logo.png";
 
 const WEEKDAYS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
 
@@ -21,17 +34,34 @@ export default function WallCalendar({ initialDate }: { initialDate?: Date } = {
   const noteInputRef = useRef<HTMLInputElement>(null);
   const dayButtonRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
-  const handleMonthChange = (dir: "prev" | "next") => {
+  const runFlipTransition = (dir: "prev" | "next", onMidFlip: () => void) => {
     if (flipPhase !== "idle") return;
 
     setFlipDirection(dir);
     setFlipPhase("out");
     setTimeout(() => {
-      if (dir === "prev") goToPrevMonth();
-      else goToNextMonth();
+      onMidFlip();
       setFlipPhase("in");
       setTimeout(() => setFlipPhase("idle"), 280);
     }, 280);
+  };
+
+  const handleMonthChange = (dir: "prev" | "next") => {
+    runFlipTransition(dir, () => {
+      if (dir === "prev") goToPrevMonth();
+      else goToNextMonth();
+    });
+  };
+
+  const handleMonthYearChange = (nextMonth: number, nextYear: number) => {
+    if (nextMonth === month && nextYear === year) return;
+    const currentIndex = year * 12 + month;
+    const targetIndex = nextYear * 12 + nextMonth;
+    const dir: "prev" | "next" = targetIndex > currentIndex ? "next" : "prev";
+
+    runFlipTransition(dir, () => {
+      setMonthYear(nextMonth, nextYear);
+    });
   };
 
   const handleAddNote = () => {
@@ -52,6 +82,25 @@ export default function WallCalendar({ initialDate }: { initialDate?: Date } = {
     return new Date(y, m, d).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
   }, [selectedDateKey]);
 
+  // Month hero mapping (all years): Jan through Dec provided.
+  const heroImageForMonth = useMemo(() => {
+    const byMonth: Record<number, string> = {
+      0: januaryHero,   // January
+      1: februaryHero,  // February
+      2: marchHero,     // March
+      3: aprilHero,     // April
+      4: mayHero,       // May
+      5: juneHero,      // June
+      6: julyHero,      // July
+      7: augustHero,    // August
+      8: septemberHero, // September
+      9: octoberHero,   // October
+      10: novemberHero, // November
+      11: decemberHero, // December
+    };
+    return byMonth[month];
+  }, [month]);
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4 md:p-8">
       <div className="w-full max-w-[520px] mx-auto">
@@ -60,7 +109,7 @@ export default function WallCalendar({ initialDate }: { initialDate?: Date } = {
 
         {/* Calendar Card */}
         <div
-          className={`bg-card rounded-b-lg overflow-hidden ${
+          className={`relative bg-card rounded-b-lg overflow-hidden ${
             flipPhase === "out"
               ? flipDirection === "next"
                 ? "calendar-flip-out-next"
@@ -84,15 +133,24 @@ export default function WallCalendar({ initialDate }: { initialDate?: Date } = {
             aria-hidden="true"
           />
 
+          <img
+            src={bottomLogo}
+            alt="takeuforward logo"
+            className="pointer-events-none absolute bottom-3 left-3 z-20 h-5 md:h-6 w-auto object-contain object-left"
+            aria-hidden="true"
+          />
+
           {/* Hero Image Section */}
           <HeroSection
             year={year}
             monthName={monthName}
+            month={month}
             isFlipping={flipPhase !== "idle"}
             flipDirection={flipDirection}
             onPrevMonth={() => handleMonthChange("prev")}
             onNextMonth={() => handleMonthChange("next")}
             controlsDisabled={flipPhase !== "idle"}
+            heroImageSrc={heroImageForMonth}
           />
 
           {/* Bottom Section: Notes + Grid */}
@@ -114,8 +172,9 @@ export default function WallCalendar({ initialDate }: { initialDate?: Date } = {
               <MonthControls
                 month={month}
                 year={year}
-                onMonthYearChange={setMonthYear}
+                onMonthYearChange={handleMonthYearChange}
                 onClearSelection={clearSelection}
+                controlsDisabled={flipPhase !== "idle"}
               />
 
               {/* Weekday headers */}

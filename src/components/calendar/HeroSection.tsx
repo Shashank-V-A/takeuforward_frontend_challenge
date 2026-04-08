@@ -1,17 +1,18 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-import calendarHero from "@/assets/calendar-hero-replacement.png";
-
 export default function HeroSection(props: {
   year: number;
   monthName: string;
+  month: number;
   isFlipping: boolean;
   flipDirection: "next" | "prev";
   onPrevMonth: () => void;
   onNextMonth: () => void;
   controlsDisabled?: boolean;
+  heroImageSrc?: string;
 }) {
-  const { year, monthName, isFlipping, flipDirection, onPrevMonth, onNextMonth, controlsDisabled } = props;
+  const { year, monthName, month, isFlipping, flipDirection, onPrevMonth, onNextMonth, controlsDisabled, heroImageSrc } = props;
+  const monthTextSizeClass = getMonthTextSizeClass(monthName);
 
   return (
     <div className="relative overflow-hidden">
@@ -20,13 +21,21 @@ export default function HeroSection(props: {
           isFlipping ? (flipDirection === "next" ? "translate-y-[-100%] opacity-0" : "translate-y-[100%] opacity-0") : "translate-y-0 opacity-100"
         }`}
       >
-        <img
-          src={calendarHero}
-          alt="Calendar hero"
-          className="w-full h-[280px] md:h-[340px] object-cover"
-          width={1920}
-          height={1080}
-        />
+        {heroImageSrc ? (
+          <img
+            src={heroImageSrc}
+            alt={`${monthName} calendar hero`}
+            className="w-full h-[280px] md:h-[340px] object-cover"
+            width={1920}
+            height={1080}
+          />
+        ) : (
+          <div
+            className="w-full h-[280px] md:h-[340px] bg-[linear-gradient(180deg,#c7cfdd_0%,#b2bece_100%)]"
+            aria-label={`${monthName} background`}
+            role="img"
+          />
+        )}
       </div>
 
       {/* Left sleek accent shape */}
@@ -42,11 +51,14 @@ export default function HeroSection(props: {
           <path d="M168,24 H300 V200 H35 Q98,148 168,24 Z" fill="hsl(var(--calendar-accent))" opacity="0.74" />
           <path d="M126,200 Q146,128 176,24 H168 Q98,148 35,200 Z" fill="hsl(var(--calendar-accent))" opacity="0.24" />
         </svg>
-        <div className="absolute bottom-0 right-0 p-6 md:p-8 text-right z-10">
+        <div className="absolute bottom-0 right-0 pr-4 pl-10 pb-5 md:pr-7 md:pl-14 md:pb-7 text-right z-10">
           <p className="text-primary-foreground font-display font-bold text-3xl md:text-4xl leading-none">
             {year}
           </p>
-          <p className="text-primary-foreground font-display font-black text-2xl md:text-3xl tracking-wider mt-1">
+          <p
+            className={`text-primary-foreground font-display font-black leading-none mt-1 uppercase ${monthTextSizeClass}`}
+            style={{ maxWidth: "100%", whiteSpace: "nowrap" }}
+          >
             {monthName}
           </p>
         </div>
@@ -81,5 +93,12 @@ export default function HeroSection(props: {
       <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
     </div>
   );
+}
+
+function getMonthTextSizeClass(monthName: string) {
+  const length = monthName.length;
+  if (length >= 9) return "text-[1.7rem] md:text-[2.15rem] tracking-wide";
+  if (length >= 8) return "text-[1.85rem] md:text-[2.3rem] tracking-wide";
+  return "text-2xl md:text-3xl tracking-wider";
 }
 
