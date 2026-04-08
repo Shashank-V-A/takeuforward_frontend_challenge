@@ -104,4 +104,62 @@
   .font-display {
     font-family: 'Montserrat', sans-serif;
   }
+
+  @keyframes calendar-flip-out-next {
+    0% { transform: perspective(1200px) rotateX(0deg) rotateY(0deg); opacity: 1; }
+    100% { transform: perspective(1200px) rotateX(-78deg) rotateY(-2.4deg); opacity: 0.92; }
+  }
+
+  @keyframes calendar-flip-in-next {
+    0% { transform: perspective(1200px) rotateX(78deg) rotateY(-2.4deg); opacity: 0.92; }
+    100% { transform: perspective(1200px) rotateX(0deg) rotateY(0deg); opacity: 1; }
+  }
+
+  @keyframes calendar-flip-out-prev {
+    0% { transform: perspective(1200px) rotateX(0deg) rotateY(0deg); opacity: 1; }
+    100% { transform: perspective(1200px) rotateX(78deg) rotateY(2.4deg); opacity: 0.92; }
+  }
+
+  @keyframes calendar-flip-in-prev {
+    0% { transform: perspective(1200px) rotateX(-78deg) rotateY(2.4deg); opacity: 0.92; }
+    100% { transform: perspective(1200px) rotateX(0deg) rotateY(0deg); opacity: 1; }
+  }
+
+  @keyframes calendar-lift-shadow-out {
+    0% {
+      background: linear-gradient(to bottom, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0) 38%);
+      opacity: 0.15;
+    }
+    100% {
+      background: linear-gradient(to bottom, rgba(0, 0, 0, 0.28), rgba(0, 0, 0, 0.06) 44%, rgba(0, 0, 0, 0) 74%);
+      opacity: 0.55;
+    }
+  }
+
+  @keyframes calendar-lift-shadow-in {
+    0% {
+      background: linear-gradient(to bottom, rgba(0, 0, 0, 0.22), rgba(0, 0, 0, 0.05) 44%, rgba(0, 0, 0, 0) 74%);
+      opacity: 0.45;
+    }
+    100% {
+      background: linear-gradient(to bottom, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0) 38%);
+      opacity: 0;
+    }
+  }
+
+  .calendar-flip-out-next,
+  .calendar-flip-in-next,
+  .calendar-flip-out-prev,
+  .calendar-flip-in-prev {
+    transform-origin: top center;
+    backface-visibility: hidden;
+    will-change: transform, opacity;
+  }
+
+  .calendar-flip-out-next { animation: calendar-flip-out-next 280ms ease-in forwards; }
+  .calendar-flip-in-next { animation: calendar-flip-in-next 280ms ease-out forwards; }
+  .calendar-flip-out-prev { animation: calendar-flip-out-prev 280ms ease-in forwards; }
+  .calendar-flip-in-prev { animation: calendar-flip-in-prev 280ms ease-out forwards; }
+  .calendar-lift-shadow-out { animation: calendar-lift-shadow-out 280ms ease-in forwards; }
+  .calendar-lift-shadow-in { animation: calendar-lift-shadow-in 280ms ease-out forwards; }
 }

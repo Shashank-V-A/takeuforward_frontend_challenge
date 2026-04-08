@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo } from "react";
+import { getCalendarDays, toDateKey } from "@/lib/calendar";
 
 export interface DateRange {
   start: Date | null;
@@ -8,10 +9,8 @@ export interface DateRange {
 export interface CalendarNote {
   id: string;
   text: string;
-  date?: string; // ISO date string if attached to a date range
+  dateKey: string;
 }
-
-const MONTH_IMAGES: Record<number, string> = {};
 
 export function useCalendar(initialDate?: Date) {
   const [currentDate, setCurrentDate] = useState(initialDate || new Date());
@@ -27,28 +26,9 @@ export function useCalendar(initialDate?: Date) {
   const month = currentDate.getMonth();
   const monthName = currentDate.toLocaleString("default", { month: "long" }).toUpperCase();
 
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const firstDayOfWeek = (new Date(year, month, 1).getDay() + 6) % 7; // Monday=0
-  const prevMonthDays = new Date(year, month, 0).getDate();
-
   const calendarDays = useMemo(() => {
-    const days: { day: number; currentMonth: boolean; date: Date }[] = [];
-    // Previous month fill
-    for (let i = firstDayOfWeek - 1; i >= 0; i--) {
-      const d = prevMonthDays - i;
-      days.push({ day: d, currentMonth: false, date: new Date(year, month - 1, d) });
-    }
-    // Current month
-    for (let d = 1; d <= daysInMonth; d++) {
-      days.push({ day: d, currentMonth: true, date: new Date(year, month, d) });
-    }
-    // Next month fill
-    const remaining = 42 - days.length;
-    for (let d = 1; d <= remaining; d++) {
-      days.push({ day: d, currentMonth: false, date: new Date(year, month + 1, d) });
-    }
-    return days;
-  }, [year, month, daysInMonth, firstDayOfWeek, prevMonthDays]);
+    return getCalendarDays(year, month);
+  }, [year, month]);
 
   const handleDateClick = useCallback((date: Date) => {
     setRange(prev => {
@@ -78,23 +58,39 @@ export function useCalendar(initialDate?: Date) {
   const goToPrevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
   const goToNextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
   const goToToday = () => setCurrentDate(new Date());
+  const setMonthYear = useCallback((nextMonth: number, nextYear: number) => {
+    setCurrentDate(new Date(nextYear, nextMonth, 1));
+  }, []);
+  const clearSelection = useCallback(() => setRange({ start: null, end: null }), []);
 
   const saveNotes = useCallback((updated: CalendarNote[]) => {
     setNotes(updated);
     localStorage.setItem("calendar-notes", JSON.stringify(updated));
   }, []);
 
+  const selectedDateKey = useMemo(() => {
+    if (range.start) return toDateKey(range.start);
+    return toDateKey(currentDate);
+  }, [currentDate, range.start]);
+
   const addNote = useCallback((text: string) => {
-    const rangeKey = range.start && range.end
-      ? `${range.start.toISOString()}_${range.end.toISOString()}`
-      : undefined;
-    const note: CalendarNote = { id: Date.now().toString(), text, date: rangeKey };
+    const note: CalendarNote = { id: Date.now().toString(), text, dateKey: selectedDateKey };
     saveNotes([...notes, note]);
-  }, [notes, range, saveNotes]);
+  }, [notes, saveNotes, selectedDateKey]);
 
   const removeNote = useCallback((id: string) => {
     saveNotes(notes.filter(n => n.id !== id));
   }, [notes, saveNotes]);
+
+  const notesForSelectedDate = useMemo(
+    () => notes.filter(note => note.dateKey === selectedDateKey),
+    [notes, selectedDateKey],
+  );
+
+  const getNoteCountForDate = useCallback(
+    (date: Date) => notes.filter(note => note.dateKey === toDateKey(date)).length,
+    [notes],
+  );
 
   const isToday = useCallback((date: Date) => {
     const today = new Date();
@@ -104,8 +100,8 @@ export function useCalendar(initialDate?: Date) {
   return {
     year, month, monthName, calendarDays,
     range, handleDateClick, isInRange, isStart, isEnd, isToday,
-    goToPrevMonth, goToNextMonth, goToToday,
-    notes, addNote, removeNote,
+    goToPrevMonth, goToNextMonth, goToToday, setMonthYear, clearSelection,
+    notes, notesForSelectedDate, selectedDateKey, addNote, removeNote, getNoteCountForDate,
     currentDate,
   };
 }

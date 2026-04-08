@@ -1,46 +1,37 @@
-import { useState, useRef } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useCalendar } from "@/hooks/useCalendar";
-import calendarHero from "@/assets/calendar-hero.jpg";
-import { ChevronLeft, ChevronRight, X, Plus, Calendar, Trash2 } from "lucide-react";
+import { toDateKey } from "@/lib/calendar";
+import HeroSection from "@/components/calendar/HeroSection";
+import NotesPanel from "@/components/calendar/NotesPanel";
+import MonthControls from "@/components/calendar/MonthControls";
 
 const WEEKDAYS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
 
-const MONTH_HEROES: Record<number, { label: string }> = {
-  0: { label: "January" },
-  1: { label: "February" },
-  2: { label: "March" },
-  3: { label: "April" },
-  4: { label: "May" },
-  5: { label: "June" },
-  6: { label: "July" },
-  7: { label: "August" },
-  8: { label: "September" },
-  9: { label: "October" },
-  10: { label: "November" },
-  11: { label: "December" },
-};
-
-export default function WallCalendar() {
+export default function WallCalendar({ initialDate }: { initialDate?: Date } = {}) {
   const {
     year, month, monthName, calendarDays,
     range, handleDateClick, isInRange, isStart, isEnd, isToday,
-    goToPrevMonth, goToNextMonth, goToToday,
-    notes, addNote, removeNote,
-  } = useCalendar();
+    goToPrevMonth, goToNextMonth, goToToday, setMonthYear, clearSelection,
+    notesForSelectedDate, selectedDateKey, addNote, removeNote, getNoteCountForDate,
+  } = useCalendar(initialDate);
 
   const [noteInput, setNoteInput] = useState("");
-  const [isFlipping, setIsFlipping] = useState(false);
+  const [flipPhase, setFlipPhase] = useState<"idle" | "out" | "in">("idle");
   const [flipDirection, setFlipDirection] = useState<"next" | "prev">("next");
   const noteInputRef = useRef<HTMLInputElement>(null);
+  const dayButtonRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
   const handleMonthChange = (dir: "prev" | "next") => {
+    if (flipPhase !== "idle") return;
+
     setFlipDirection(dir);
-    setIsFlipping(true);
+    setFlipPhase("out");
     setTimeout(() => {
       if (dir === "prev") goToPrevMonth();
       else goToNextMonth();
-      setTimeout(() => setIsFlipping(false), 50);
-    }, 300);
+      setFlipPhase("in");
+      setTimeout(() => setFlipPhase("idle"), 280);
+    }, 280);
   };
 
   const handleAddNote = () => {
@@ -56,6 +47,11 @@ export default function WallCalendar() {
       : `${range.start.toLocaleDateString()} — Select end date`
     : null;
 
+  const selectedDateLabel = useMemo(() => {
+    const [y, m, d] = selectedDateKey.split("-").map(Number);
+    return new Date(y, m, d).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+  }, [selectedDateKey]);
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4 md:p-8">
       <div className="w-full max-w-[520px] mx-auto">
@@ -64,124 +60,64 @@ export default function WallCalendar() {
 
         {/* Calendar Card */}
         <div
-          className="bg-card rounded-b-lg overflow-hidden"
+          className={`bg-card rounded-b-lg overflow-hidden ${
+            flipPhase === "out"
+              ? flipDirection === "next"
+                ? "calendar-flip-out-next"
+                : "calendar-flip-out-prev"
+              : flipPhase === "in"
+                ? flipDirection === "next"
+                  ? "calendar-flip-in-next"
+                  : "calendar-flip-in-prev"
+                : ""
+          }`}
           style={{ boxShadow: "0 25px 60px -12px hsl(var(--calendar-shadow) / 0.25)" }}
         >
+          <div
+            className={`pointer-events-none absolute inset-0 z-30 ${
+              flipPhase === "out"
+                ? "calendar-lift-shadow-out"
+                : flipPhase === "in"
+                  ? "calendar-lift-shadow-in"
+                  : ""
+            }`}
+            aria-hidden="true"
+          />
+
           {/* Hero Image Section */}
-          <div className="relative overflow-hidden">
-            <div
-              className={`transition-all duration-300 ${
-                isFlipping
-                  ? flipDirection === "next"
-                    ? "translate-y-[-100%] opacity-0"
-                    : "translate-y-[100%] opacity-0"
-                  : "translate-y-0 opacity-100"
-              }`}
-            >
-              <img
-                src={calendarHero}
-                alt="Calendar hero"
-                className="w-full h-[280px] md:h-[340px] object-cover"
-                width={1920}
-                height={1080}
-              />
-            </div>
-
-            {/* Blue diagonal overlay with month/year */}
-            <div className="absolute bottom-0 right-0 w-[55%] h-full pointer-events-none">
-              <svg viewBox="0 0 300 200" preserveAspectRatio="none" className="absolute inset-0 w-full h-full">
-                <polygon points="120,0 300,0 300,200 40,200" fill="hsl(var(--calendar-accent))" opacity="0.92" />
-                <polygon points="100,200 130,0 120,0 40,200" fill="hsl(var(--calendar-accent))" opacity="0.5" />
-              </svg>
-              <div className="absolute bottom-0 right-0 p-6 md:p-8 text-right z-10">
-                <p className="text-primary-foreground font-display font-bold text-3xl md:text-4xl leading-none">
-                  {year}
-                </p>
-                <p className="text-primary-foreground font-display font-black text-2xl md:text-3xl tracking-wider mt-1">
-                  {monthName}
-                </p>
-              </div>
-            </div>
-
-            {/* Navigation arrows */}
-            <button
-              onClick={() => handleMonthChange("prev")}
-              className="absolute top-4 left-4 bg-card/80 hover:bg-card text-card-foreground rounded-full p-1.5 backdrop-blur-sm transition-colors z-20"
-              aria-label="Previous month"
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-            <button
-              onClick={() => handleMonthChange("next")}
-              className="absolute top-4 right-4 bg-card/80 hover:bg-card text-card-foreground rounded-full p-1.5 backdrop-blur-sm transition-colors z-20"
-              aria-label="Next month"
-            >
-              <ChevronRight className="w-5 h-5" />
-            </button>
-          </div>
+          <HeroSection
+            year={year}
+            monthName={monthName}
+            isFlipping={flipPhase !== "idle"}
+            flipDirection={flipDirection}
+            onPrevMonth={() => handleMonthChange("prev")}
+            onNextMonth={() => handleMonthChange("next")}
+            controlsDisabled={flipPhase !== "idle"}
+          />
 
           {/* Bottom Section: Notes + Grid */}
           <div className="flex flex-col md:flex-row">
             {/* Notes Section */}
-            <div className="w-full md:w-[35%] p-4 md:p-5 border-b md:border-b-0 md:border-r border-border">
-              <h3 className="font-display font-semibold text-sm text-card-foreground mb-3">Notes</h3>
-
-              {rangeLabel && (
-                <p className="text-[11px] text-calendar-accent font-medium mb-2 flex items-center gap-1">
-                  <Calendar className="w-3 h-3" />
-                  {rangeLabel}
-                </p>
-              )}
-
-              <div className="flex gap-1.5 mb-3">
-                <input
-                  ref={noteInputRef}
-                  value={noteInput}
-                  onChange={e => setNoteInput(e.target.value)}
-                  onKeyDown={e => e.key === "Enter" && handleAddNote()}
-                  placeholder="Add a note..."
-                  className="flex-1 text-xs bg-secondary border-none rounded px-2.5 py-1.5 text-secondary-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-                />
-                <button
-                  onClick={handleAddNote}
-                  className="bg-primary text-primary-foreground rounded p-1.5 hover:opacity-90 transition-opacity"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                </button>
-              </div>
-
-              <div className="space-y-0">
-                {notes.length === 0 ? (
-                  <div className="space-y-2">
-                    {[...Array(5)].map((_, i) => (
-                      <div key={i} className="border-b border-calendar-line h-5" />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="max-h-[140px] overflow-y-auto space-y-0">
-                    {notes.map(note => (
-                      <div
-                        key={note.id}
-                        className="flex items-start justify-between gap-1 border-b border-calendar-line py-1.5 group"
-                      >
-                        <span className="text-[11px] text-card-foreground leading-tight flex-1">
-                          {note.text}
-                        </span>
-                        <button
-                          onClick={() => removeNote(note.id)}
-                          className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all p-0.5 shrink-0"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
+            <NotesPanel
+              rangeLabel={rangeLabel}
+              selectedDateLabel={selectedDateLabel}
+              noteInput={noteInput}
+              setNoteInput={setNoteInput}
+              noteInputRef={noteInputRef}
+              onAddNote={handleAddNote}
+              notesForSelectedDate={notesForSelectedDate}
+              removeNote={removeNote}
+            />
 
             {/* Calendar Grid */}
             <div className="flex-1 p-4 md:p-5">
+              <MonthControls
+                month={month}
+                year={year}
+                onMonthYearChange={setMonthYear}
+                onClearSelection={clearSelection}
+              />
+
               {/* Weekday headers */}
               <div className="grid grid-cols-7 mb-2">
                 {WEEKDAYS.map((day, i) => (
@@ -208,8 +144,41 @@ export default function WallCalendar() {
 
                   return (
                     <button
+                      ref={el => {
+                        dayButtonRefs.current[idx] = el;
+                      }}
                       key={idx}
+                      type="button"
+                      data-testid={`day-${toDateKey(item.date)}`}
+                      data-date-key={toDateKey(item.date)}
                       onClick={() => handleDateClick(item.date)}
+                      onKeyDown={e => {
+                        const move = (targetIdx: number) => dayButtonRefs.current[targetIdx]?.focus();
+                        if (e.key === "ArrowRight" && idx < calendarDays.length - 1) {
+                          e.preventDefault();
+                          move(idx + 1);
+                        } else if (e.key === "ArrowLeft" && idx > 0) {
+                          e.preventDefault();
+                          move(idx - 1);
+                        } else if (e.key === "ArrowDown" && idx + 7 < calendarDays.length) {
+                          e.preventDefault();
+                          move(idx + 7);
+                        } else if (e.key === "ArrowUp" && idx - 7 >= 0) {
+                          e.preventDefault();
+                          move(idx - 7);
+                        } else if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          handleDateClick(item.date);
+                        }
+                      }}
+                      aria-label={item.date.toLocaleDateString(undefined, {
+                        weekday: "long",
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                      })}
+                      aria-selected={start || end || inRange}
+                      aria-current={today ? "date" : undefined}
                       className={`
                         relative h-8 md:h-9 flex items-center justify-center text-sm font-medium transition-all duration-150 cursor-pointer
                         ${!item.currentMonth ? "text-calendar-grey" : isWeekend ? "text-calendar-weekend" : "text-card-foreground"}
@@ -221,9 +190,13 @@ export default function WallCalendar() {
                         ${start && !range.end ? "rounded-full" : ""}
                         ${today && !start && !end ? "ring-2 ring-primary ring-offset-1 ring-offset-card rounded-full" : ""}
                         ${!start && !end && !inRange ? "hover:bg-secondary rounded-full" : ""}
+                        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1
                       `}
                     >
                       {item.day}
+                      {getNoteCountForDate(item.date) > 0 && item.currentMonth && (
+                        <span className="absolute bottom-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-primary" aria-hidden="true" />
+                      )}
                     </button>
                   );
                 })}
