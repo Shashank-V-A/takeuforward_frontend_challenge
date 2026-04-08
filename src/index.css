@@ -193,11 +193,34 @@
     will-change: transform, opacity;
   }
 
-  .calendar-flip-out-next { animation: calendar-flip-out-next 280ms ease-in forwards; }
-  .calendar-flip-in-next { animation: calendar-flip-in-next 280ms ease-out forwards; }
-  .calendar-flip-out-prev { animation: calendar-flip-out-prev 280ms ease-in forwards; }
-  .calendar-flip-in-prev { animation: calendar-flip-in-prev 280ms ease-out forwards; }
-  .calendar-lift-shadow-out { animation: calendar-lift-shadow-out 280ms ease-in forwards; }
-  .calendar-lift-shadow-in { animation: calendar-lift-shadow-in 280ms ease-out forwards; }
+  .calendar-flip-out-next { animation: calendar-flip-out-next var(--flip-ms, 280ms) ease-in forwards; }
+  .calendar-flip-in-next { animation: calendar-flip-in-next var(--flip-ms, 280ms) ease-out forwards; }
+  .calendar-flip-out-prev { animation: calendar-flip-out-prev var(--flip-ms, 280ms) ease-in forwards; }
+  .calendar-flip-in-prev { animation: calendar-flip-in-prev var(--flip-ms, 280ms) ease-out forwards; }
+  .calendar-lift-shadow-out { animation: calendar-lift-shadow-out var(--flip-ms, 280ms) ease-in forwards; }
+  .calendar-lift-shadow-in { animation: calendar-lift-shadow-in var(--flip-ms, 280ms) ease-out forwards; }
+
+  .calendar-paper-texture {
+    opacity: 0.03;
+    background-image:
+      repeating-linear-gradient(0deg, rgba(30, 36, 48, 0.5) 0 1px, transparent 1px 8px),
+      repeating-linear-gradient(90deg, rgba(30, 36, 48, 0.35) 0 1px, transparent 1px 9px);
+    mix-blend-mode: multiply;
+  }
+
+  @keyframes calendar-sway {
+    0% { transform: rotate(0deg); }
+    50% { transform: rotate(0.5deg); }
+    100% { transform: rotate(0deg); }
+  }
+
+  .calendar-sway {
+    transform-origin: top center;
+    animation: calendar-sway 4.2s ease-in-out infinite;
+  }
+
+  [data-realism="desk"] .calendar-paper-texture {
+    opacity: 0.02;
+  }
 
 }

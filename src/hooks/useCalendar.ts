@@ -15,6 +15,7 @@ export interface CalendarNote {
 export interface CalendarEvent {
   id: string;
   title: string;
+  type: "trail" | "milestone" | "rest" | "challenge";
   color: "blue" | "orange" | "green" | "purple";
   dateKey: string;
 }
@@ -97,12 +98,48 @@ export function useCalendar(initialDate?: Date) {
     saveNotes([...notes, note]);
   }, [notes, saveNotes, selectedDateKey]);
   const addEvent = useCallback((title: string) => {
+    const classifyEventType = (value: string): CalendarEvent["type"] => {
+      const text = value.toLowerCase();
+      if (/(rest|break|sleep|recover|off day)/.test(text)) return "rest";
+      if (/(deadline|launch|submit|milestone|demo|interview|exam)/.test(text)) return "milestone";
+      if (/(hard|challenge|climb|storm|sprint|push|urgent)/.test(text)) return "challenge";
+      return "trail";
+    };
+
     const palette: CalendarEvent["color"][] = ["blue", "orange", "green", "purple"];
     const sameDayEvents = events.filter(event => event.dateKey === selectedDateKey);
     const color = palette[sameDayEvents.length % palette.length];
-    const event: CalendarEvent = { id: Date.now().toString(), title, color, dateKey: selectedDateKey };
+    const event: CalendarEvent = {
+      id: Date.now().toString(),
+      title,
+      type: classifyEventType(title),
+      color,
+      dateKey: selectedDateKey,
+    };
     saveEvents([...events, event]);
   }, [events, saveEvents, selectedDateKey]);
+
+  const addEventOnDate = useCallback((title: string, date: Date) => {
+    const classifyEventType = (value: string): CalendarEvent["type"] => {
+      const text = value.toLowerCase();
+      if (/(rest|break|sleep|recover|off day)/.test(text)) return "rest";
+      if (/(deadline|launch|submit|milestone|demo|interview|exam)/.test(text)) return "milestone";
+      if (/(hard|challenge|climb|storm|sprint|push|urgent)/.test(text)) return "challenge";
+      return "trail";
+    };
+    const dateKey = toDateKey(date);
+    const palette: CalendarEvent["color"][] = ["blue", "orange", "green", "purple"];
+    const sameDayEvents = events.filter(event => event.dateKey === dateKey);
+    const color = palette[sameDayEvents.length % palette.length];
+    const event: CalendarEvent = {
+      id: Date.now().toString(),
+      title,
+      type: classifyEventType(title),
+      color,
+      dateKey,
+    };
+    saveEvents([...events, event]);
+  }, [events, saveEvents]);
 
   const removeNote = useCallback((id: string) => {
     saveNotes(notes.filter(n => n.id !== id));
@@ -128,6 +165,25 @@ export function useCalendar(initialDate?: Date) {
     (date: Date) => events.filter(event => event.dateKey === toDateKey(date)),
     [events],
   );
+  const getActivityCountForDate = useCallback(
+    (date: Date) =>
+      notes.filter(note => note.dateKey === toDateKey(date)).length +
+      events.filter(event => event.dateKey === toDateKey(date)).length,
+    [notes, events],
+  );
+  const activityStreak = useMemo(() => {
+    let streak = 0;
+    const cursor = new Date();
+    cursor.setHours(0, 0, 0, 0);
+    for (let i = 0; i < 365; i++) {
+      const key = toDateKey(cursor);
+      const hasActivity = notes.some(note => note.dateKey === key) || events.some(event => event.dateKey === key);
+      if (!hasActivity) break;
+      streak += 1;
+      cursor.setDate(cursor.getDate() - 1);
+    }
+    return streak;
+  }, [notes, events]);
 
   const isToday = useCallback((date: Date) => {
     const today = new Date();
@@ -139,7 +195,7 @@ export function useCalendar(initialDate?: Date) {
     range, handleDateClick, isInRange, isStart, isEnd, isToday,
     goToPrevMonth, goToNextMonth, goToToday, setMonthYear, clearSelection,
     notes, notesForSelectedDate, selectedDateKey, addNote, removeNote, getNoteCountForDate,
-    events, eventsForSelectedDate, addEvent, removeEvent, getEventsForDate,
+    events, eventsForSelectedDate, addEvent, addEventOnDate, removeEvent, getEventsForDate, getActivityCountForDate, activityStreak,
     currentDate,
   };
 }

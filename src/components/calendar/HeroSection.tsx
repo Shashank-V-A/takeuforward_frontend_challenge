@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 export default function HeroSection(props: {
@@ -10,16 +11,43 @@ export default function HeroSection(props: {
   onNextMonth: () => void;
   controlsDisabled?: boolean;
   heroImageSrc?: string;
+  chapterTitle?: string;
+  monthQuote?: string;
+  tintColor?: string;
 }) {
-  const { year, monthName, month, isFlipping, flipDirection, onPrevMonth, onNextMonth, controlsDisabled, heroImageSrc } = props;
+  const {
+    year,
+    monthName,
+    month,
+    isFlipping,
+    flipDirection,
+    onPrevMonth,
+    onNextMonth,
+    controlsDisabled,
+    heroImageSrc,
+    chapterTitle,
+    monthQuote,
+    tintColor,
+  } = props;
   const monthTextSizeClass = getMonthTextSizeClass(monthName);
+  const [parallax, setParallax] = useState({ x: 0, y: 0 });
 
   return (
-    <div className="relative overflow-hidden">
+    <div
+      className="relative overflow-hidden"
+      onMouseMove={e => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const nx = ((e.clientX - rect.left) / rect.width - 0.5) * 2;
+        const ny = ((e.clientY - rect.top) / rect.height - 0.5) * 2;
+        setParallax({ x: nx * 5, y: ny * 4 });
+      }}
+      onMouseLeave={() => setParallax({ x: 0, y: 0 })}
+    >
       <div
         className={`transition-all duration-300 ${
           isFlipping ? (flipDirection === "next" ? "translate-y-[-100%] opacity-0" : "translate-y-[100%] opacity-0") : "translate-y-0 opacity-100"
         }`}
+        style={{ transform: `translate3d(${parallax.x}px, ${parallax.y}px, 0)` }}
       >
         {heroImageSrc ? (
           <img
@@ -38,6 +66,13 @@ export default function HeroSection(props: {
         )}
       </div>
 
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: `linear-gradient(180deg, ${tintColor ?? "rgba(0,0,0,0.12)"} 0%, rgba(0,0,0,0.04) 55%, rgba(0,0,0,0) 100%)`,
+        }}
+      />
+
       {/* Left sleek accent shape */}
       <div className="absolute bottom-0 left-0 w-[20%] h-[22%] pointer-events-none">
         <svg viewBox="0 0 180 120" preserveAspectRatio="none" className="absolute inset-0 w-full h-full">
@@ -52,6 +87,11 @@ export default function HeroSection(props: {
           <path d="M126,200 Q146,128 176,24 H168 Q98,148 35,200 Z" fill="hsl(var(--calendar-accent))" opacity="0.24" />
         </svg>
         <div className="absolute bottom-0 right-0 pr-4 pl-10 pb-5 md:pr-7 md:pl-14 md:pb-7 text-right z-10">
+          {chapterTitle && (
+            <p className="text-primary-foreground/90 font-display text-[11px] md:text-xs tracking-widest uppercase mb-1">
+              {chapterTitle}
+            </p>
+          )}
           <p className="text-primary-foreground font-display font-bold text-3xl md:text-4xl leading-none">
             {year}
           </p>
@@ -61,6 +101,11 @@ export default function HeroSection(props: {
           >
             {monthName}
           </p>
+          {monthQuote && (
+            <p className="text-primary-foreground/95 text-[10px] md:text-[11px] mt-2 max-w-[180px] ml-auto leading-tight">
+              {monthQuote}
+            </p>
+          )}
         </div>
       </div>
 

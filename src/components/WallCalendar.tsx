@@ -20,6 +20,20 @@ import decemberHero from "@/assets/calendar-hero-dec.png";
 import bottomLogo from "@/assets/calendar-bottom-logo.png";
 
 const WEEKDAYS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
+const MONTH_STORY: Record<number, { chapter: string; quote: string; tint: string; season: "winter" | "spring" | "summer" | "autumn" }> = {
+  0: { chapter: "Chapter: Summit Resolve", quote: "Every steep start shapes the year ahead.", tint: "rgba(16,34,58,0.22)", season: "winter" },
+  1: { chapter: "Chapter: Frozen Horizon", quote: "Courage grows in cold, clear air.", tint: "rgba(18,54,95,0.18)", season: "winter" },
+  2: { chapter: "Chapter: Valley Dawn", quote: "New trails appear when you keep moving.", tint: "rgba(34,88,118,0.14)", season: "spring" },
+  3: { chapter: "Chapter: Trail Awakening", quote: "Step by step, the map becomes yours.", tint: "rgba(34,90,111,0.14)", season: "spring" },
+  4: { chapter: "Chapter: Ridge Bond", quote: "Progress is stronger when shared.", tint: "rgba(79,98,108,0.16)", season: "spring" },
+  5: { chapter: "Chapter: Long Light", quote: "Momentum favors those who keep pace.", tint: "rgba(80,88,72,0.15)", season: "summer" },
+  6: { chapter: "Chapter: Wild Ascent", quote: "The climb tests you before it crowns you.", tint: "rgba(34,66,78,0.17)", season: "summer" },
+  7: { chapter: "Chapter: Open Sky", quote: "The view expands with every brave choice.", tint: "rgba(24,70,110,0.16)", season: "summer" },
+  8: { chapter: "Chapter: Storm Edge", quote: "Hold steady; weather always changes.", tint: "rgba(36,56,84,0.2)", season: "autumn" },
+  9: { chapter: "Chapter: Dry Wind", quote: "Discipline turns distance into milestones.", tint: "rgba(64,58,46,0.18)", season: "autumn" },
+  10: { chapter: "Chapter: Cloud Leap", quote: "Trust the leap; your footing follows.", tint: "rgba(43,73,106,0.18)", season: "autumn" },
+  11: { chapter: "Chapter: Snow Crest", quote: "Finish strong, then rise again.", tint: "rgba(24,56,92,0.2)", season: "winter" },
+};
 const HERO_BY_MONTH: Record<number, string> = {
   0: januaryHero,   // January
   1: februaryHero,  // February
@@ -41,7 +55,7 @@ export default function WallCalendar({ initialDate }: { initialDate?: Date } = {
     range, handleDateClick, isInRange, isStart, isEnd, isToday,
     goToPrevMonth, goToNextMonth, goToToday, setMonthYear, clearSelection,
     notesForSelectedDate, selectedDateKey, addNote, removeNote, getNoteCountForDate,
-    eventsForSelectedDate, addEvent, removeEvent, getEventsForDate,
+    eventsForSelectedDate, addEvent, addEventOnDate, removeEvent, getEventsForDate, activityStreak,
   } = useCalendar(initialDate);
 
   const [noteInput, setNoteInput] = useState("");
@@ -49,6 +63,14 @@ export default function WallCalendar({ initialDate }: { initialDate?: Date } = {
   const [flipPhase, setFlipPhase] = useState<"idle" | "out" | "in">("idle");
   const [flipDirection, setFlipDirection] = useState<"next" | "prev">("next");
   const [holidayRegion, setHolidayRegion] = useState<HolidayRegion>("none");
+  const [realismMode, setRealismMode] = useState<"wall" | "desk">(() => {
+    try {
+      const saved = localStorage.getItem("calendar-realism");
+      return saved === "desk" ? "desk" : "wall";
+    } catch {
+      return "wall";
+    }
+  });
   const [themeMode, setThemeMode] = useState<"light" | "dark" | "ocean">(() => {
     try {
       const saved = localStorage.getItem("calendar-theme");
@@ -61,6 +83,8 @@ export default function WallCalendar({ initialDate }: { initialDate?: Date } = {
   const noteInputRef = useRef<HTMLInputElement>(null);
   const eventInputRef = useRef<HTMLInputElement>(null);
   const dayButtonRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const season = MONTH_STORY[month]?.season ?? "spring";
+  const flipMs = season === "winter" ? 360 : season === "summer" ? 220 : season === "autumn" ? 300 : 260;
 
   const runFlipTransition = (dir: "prev" | "next", onMidFlip: () => void) => {
     if (flipPhase !== "idle") return;
@@ -70,8 +94,8 @@ export default function WallCalendar({ initialDate }: { initialDate?: Date } = {
     setTimeout(() => {
       onMidFlip();
       setFlipPhase("in");
-      setTimeout(() => setFlipPhase("idle"), 280);
-    }, 280);
+      setTimeout(() => setFlipPhase("idle"), flipMs);
+    }, flipMs);
   };
 
   const handleMonthChange = (dir: "prev" | "next") => {
@@ -94,7 +118,17 @@ export default function WallCalendar({ initialDate }: { initialDate?: Date } = {
 
   const handleAddNote = () => {
     if (!noteInput.trim()) return;
-    addNote(noteInput.trim());
+    const text = noteInput.trim();
+    const quickEventMatch = /(today|tomorrow|\b(?:mon|tue|wed|thu|fri|sat|sun)\b|\d{1,2}(:\d{2})?\s?(am|pm)?)/i.test(text);
+    if (quickEventMatch) {
+      let target = new Date();
+      if (/tomorrow/i.test(text)) target.setDate(target.getDate() + 1);
+      if (/today/i.test(text)) target = new Date();
+      addEventOnDate(text, target);
+      addNote(`Auto-log: ${text}`);
+    } else {
+      addNote(text);
+    }
     setNoteInput("");
     noteInputRef.current?.focus();
   };
@@ -134,6 +168,9 @@ export default function WallCalendar({ initialDate }: { initialDate?: Date } = {
       img.src = src;
     });
   }, [month]);
+  useEffect(() => {
+    localStorage.setItem("calendar-realism", realismMode);
+  }, [realismMode]);
 
   // Persist and apply theme to the document root.
   useEffect(() => {
@@ -180,7 +217,7 @@ export default function WallCalendar({ initialDate }: { initialDate?: Date } = {
     <div className="min-h-screen bg-background flex items-center justify-center p-4 md:p-8">
       <div className="w-full max-w-[520px] mx-auto">
         {/* Spiral Binding */}
-        <SpiralBinding />
+        <SpiralBinding realismMode={realismMode} />
 
         {/* Calendar Card */}
         <div
@@ -195,7 +232,14 @@ export default function WallCalendar({ initialDate }: { initialDate?: Date } = {
                   : "calendar-flip-in-prev"
                 : ""
           }`}
-          style={{ boxShadow: "0 25px 60px -12px hsl(var(--calendar-shadow) / 0.25)" }}
+          data-realism={realismMode}
+          style={{
+            boxShadow:
+              realismMode === "wall"
+                ? "0 28px 64px -14px hsl(var(--calendar-shadow) / 0.28)"
+                : "0 14px 30px -12px hsl(var(--calendar-shadow) / 0.18)",
+            ["--flip-ms" as string]: `${flipMs}ms`,
+          }}
         >
           <div
             className={`pointer-events-none absolute inset-0 z-30 ${
@@ -208,12 +252,7 @@ export default function WallCalendar({ initialDate }: { initialDate?: Date } = {
             aria-hidden="true"
           />
 
-          <img
-            src={bottomLogo}
-            alt="takeuforward logo"
-            className="pointer-events-none absolute bottom-3 left-3 z-20 h-5 md:h-6 w-auto object-contain object-left"
-            aria-hidden="true"
-          />
+          <div className="calendar-paper-texture pointer-events-none absolute inset-0 z-10" aria-hidden="true" />
 
           {/* Hero Image Section */}
           <HeroSection
@@ -226,6 +265,9 @@ export default function WallCalendar({ initialDate }: { initialDate?: Date } = {
             onNextMonth={() => handleMonthChange("next")}
             controlsDisabled={flipPhase !== "idle"}
             heroImageSrc={heroImageForMonth}
+            chapterTitle={MONTH_STORY[month]?.chapter}
+            monthQuote={MONTH_STORY[month]?.quote}
+            tintColor={MONTH_STORY[month]?.tint}
           />
 
           {/* Bottom Section: Notes + Grid */}
@@ -246,6 +288,7 @@ export default function WallCalendar({ initialDate }: { initialDate?: Date } = {
               onAddEvent={handleAddEvent}
               eventsForSelectedDate={eventsForSelectedDate}
               removeEvent={removeEvent}
+              activityStreak={activityStreak}
             />
 
             {/* Calendar Grid */}
@@ -260,6 +303,8 @@ export default function WallCalendar({ initialDate }: { initialDate?: Date } = {
                 onHolidayRegionChange={setHolidayRegion}
                 themeMode={themeMode}
                 onThemeModeChange={setThemeMode}
+                realismMode={realismMode}
+                onRealismModeChange={setRealismMode}
               />
 
               {/* Weekday headers */}
@@ -382,6 +427,13 @@ export default function WallCalendar({ initialDate }: { initialDate?: Date } = {
                   Today
                 </button>
               </div>
+              <div className="mt-2 flex justify-end">
+                <img
+                  src={bottomLogo}
+                  alt="takeuforward logo"
+                  className="h-5 md:h-6 w-auto object-contain object-right"
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -390,20 +442,28 @@ export default function WallCalendar({ initialDate }: { initialDate?: Date } = {
   );
 }
 
-function SpiralBinding() {
+function SpiralBinding({ realismMode }: { realismMode: "wall" | "desk" }) {
   const spirals = Array.from({ length: 18 });
   return (
-    <div className="relative h-10 flex items-end justify-center gap-[6px] px-4 overflow-hidden">
+    <div
+      className={`relative h-10 flex items-end justify-center gap-[6px] px-4 overflow-hidden ${
+        realismMode === "wall" ? "calendar-sway" : ""
+      }`}
+    >
       {/* Wall nail + hanger */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 z-20" aria-hidden="true">
-        <div className="w-2.5 h-2.5 rounded-full bg-foreground/55 shadow-[0_1px_2px_rgba(0,0,0,0.35)] mx-auto" />
-        <div className="w-0 h-0 border-l-[6px] border-r-[6px] border-t-[7px] border-l-transparent border-r-transparent border-t-foreground/40 mx-auto -mt-[1px]" />
-      </div>
-      <div
-        className="absolute top-[8px] left-1/2 -translate-x-1/2 w-9 h-5 border-2 border-foreground/35 rounded-b-full rounded-t-[2px]"
-        style={{ borderTop: "none" }}
-        aria-hidden="true"
-      />
+      {realismMode === "wall" && (
+        <>
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 z-20" aria-hidden="true">
+            <div className="w-2.5 h-2.5 rounded-full bg-foreground/55 shadow-[0_1px_2px_rgba(0,0,0,0.35)] mx-auto" />
+            <div className="w-0 h-0 border-l-[6px] border-r-[6px] border-t-[7px] border-l-transparent border-r-transparent border-t-foreground/40 mx-auto -mt-[1px]" />
+          </div>
+          <div
+            className="absolute top-[8px] left-1/2 -translate-x-1/2 w-9 h-5 border-2 border-foreground/35 rounded-b-full rounded-t-[2px]"
+            style={{ borderTop: "none" }}
+            aria-hidden="true"
+          />
+        </>
+      )}
 
       {spirals.map((_, i) => (
         <div key={i} className="relative w-4 h-6 flex items-end justify-center">

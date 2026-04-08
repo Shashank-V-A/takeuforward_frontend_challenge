@@ -8,6 +8,8 @@ export default function MonthControls(props: {
   onHolidayRegionChange?: (region: "none" | "india" | "global") => void;
   themeMode?: "light" | "dark" | "ocean";
   onThemeModeChange?: (theme: "light" | "dark" | "ocean") => void;
+  realismMode?: "wall" | "desk";
+  onRealismModeChange?: (mode: "wall" | "desk") => void;
 }) {
   const {
     month,
@@ -19,6 +21,8 @@ export default function MonthControls(props: {
     onHolidayRegionChange,
     themeMode = "light",
     onThemeModeChange,
+    realismMode = "wall",
+    onRealismModeChange,
   } = props;
 
   const MONTHS = [
@@ -78,6 +82,16 @@ export default function MonthControls(props: {
       </div>
 
       <div className="flex items-center gap-2">
+        <select
+          value={realismMode}
+          onChange={e => onRealismModeChange?.(e.target.value as "wall" | "desk")}
+          className="text-[11px] rounded border border-input bg-card px-2 py-1 font-display font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+          aria-label="Calendar realism mode"
+          disabled={controlsDisabled}
+        >
+          <option value="wall">Mode: Wall</option>
+          <option value="desk">Mode: Desk</option>
+        </select>
         <select
           value={themeMode}
           onChange={e => onThemeModeChange?.(e.target.value as "light" | "dark" | "ocean")}
