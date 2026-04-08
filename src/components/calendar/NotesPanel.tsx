@@ -1,7 +1,7 @@
 import { Dispatch, SetStateAction, RefObject } from "react";
 import { Calendar, Trash2 } from "lucide-react";
 
-import type { CalendarNote } from "@/hooks/useCalendar";
+import type { CalendarEvent, CalendarNote } from "@/hooks/useCalendar";
 
 export default function NotesPanel(props: {
   rangeLabel: string | null;
@@ -12,6 +12,12 @@ export default function NotesPanel(props: {
   onAddNote: () => void;
   notesForSelectedDate: CalendarNote[];
   removeNote: (id: string) => void;
+  eventInput: string;
+  setEventInput: Dispatch<SetStateAction<string>>;
+  eventInputRef: RefObject<HTMLInputElement>;
+  onAddEvent: () => void;
+  eventsForSelectedDate: CalendarEvent[];
+  removeEvent: (id: string) => void;
 }) {
   const {
     rangeLabel,
@@ -22,6 +28,12 @@ export default function NotesPanel(props: {
     onAddNote,
     notesForSelectedDate,
     removeNote,
+    eventInput,
+    setEventInput,
+    eventInputRef,
+    onAddEvent,
+    eventsForSelectedDate,
+    removeEvent,
   } = props;
 
   return (
@@ -47,6 +59,37 @@ export default function NotesPanel(props: {
           className="w-full text-xs bg-secondary border-none rounded px-2.5 py-1.5 text-secondary-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
         />
       </div>
+
+      <div className="mb-3">
+        <input
+          ref={eventInputRef}
+          value={eventInput}
+          onChange={e => setEventInput(e.target.value)}
+          onKeyDown={e => e.key === "Enter" && onAddEvent()}
+          placeholder="Add an event..."
+          className="w-full text-xs bg-secondary border-none rounded px-2.5 py-1.5 text-secondary-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+        />
+      </div>
+
+      {eventsForSelectedDate.length > 0 && (
+        <div className="mb-3 space-y-1.5">
+          {eventsForSelectedDate.map(event => (
+            <div key={event.id} className="flex items-center justify-between gap-2 text-[11px]">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className={`w-2 h-2 rounded-full ${eventColorClass(event.color)}`} aria-hidden="true" />
+                <span className="truncate">{event.title}</span>
+              </div>
+              <button
+                onClick={() => removeEvent(event.id)}
+                className="text-muted-foreground hover:text-destructive transition-colors p-0.5 shrink-0 rounded"
+                aria-label={`Remove event ${event.title}`}
+              >
+                <Trash2 className="w-3 h-3" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="space-y-0">
         {notesForSelectedDate.length === 0 ? (
@@ -78,5 +121,12 @@ export default function NotesPanel(props: {
       </div>
     </div>
   );
+}
+
+function eventColorClass(color: CalendarEvent["color"]) {
+  if (color === "orange") return "bg-orange-500";
+  if (color === "green") return "bg-emerald-500";
+  if (color === "purple") return "bg-violet-500";
+  return "bg-sky-500";
 }
 

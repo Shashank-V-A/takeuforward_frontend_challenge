@@ -88,6 +88,43 @@
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
+
+  [data-theme="ocean"] {
+    --background: 204 50% 95%;
+    --foreground: 210 42% 16%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 210 42% 16%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 210 42% 16%;
+
+    --primary: 197 85% 42%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 203 45% 92%;
+    --secondary-foreground: 210 42% 18%;
+
+    --muted: 202 35% 90%;
+    --muted-foreground: 210 20% 42%;
+
+    --accent: 186 70% 44%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 74% 52%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 204 30% 82%;
+    --input: 204 30% 82%;
+    --ring: 197 85% 42%;
+
+    --calendar-accent: 197 85% 46%;
+    --calendar-accent-light: 197 78% 90%;
+    --calendar-weekend: 196 85% 44%;
+    --calendar-grey: 210 15% 66%;
+    --calendar-line: 205 24% 84%;
+    --calendar-shadow: 210 40% 18%;
+  }
 }
 
 @layer base {

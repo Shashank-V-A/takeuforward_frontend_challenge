@@ -12,6 +12,13 @@ export interface CalendarNote {
   dateKey: string;
 }
 
+export interface CalendarEvent {
+  id: string;
+  title: string;
+  color: "blue" | "orange" | "green" | "purple";
+  dateKey: string;
+}
+
 export function useCalendar(initialDate?: Date) {
   const [currentDate, setCurrentDate] = useState(initialDate || new Date());
   const [range, setRange] = useState<DateRange>({ start: null, end: null });
@@ -20,6 +27,14 @@ export function useCalendar(initialDate?: Date) {
       const saved = localStorage.getItem("calendar-notes");
       return saved ? JSON.parse(saved) : [];
     } catch { return []; }
+  });
+  const [events, setEvents] = useState<CalendarEvent[]>(() => {
+    try {
+      const saved = localStorage.getItem("calendar-events");
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
   });
 
   const year = currentDate.getFullYear();
@@ -67,6 +82,10 @@ export function useCalendar(initialDate?: Date) {
     setNotes(updated);
     localStorage.setItem("calendar-notes", JSON.stringify(updated));
   }, []);
+  const saveEvents = useCallback((updated: CalendarEvent[]) => {
+    setEvents(updated);
+    localStorage.setItem("calendar-events", JSON.stringify(updated));
+  }, []);
 
   const selectedDateKey = useMemo(() => {
     if (range.start) return toDateKey(range.start);
@@ -77,19 +96,37 @@ export function useCalendar(initialDate?: Date) {
     const note: CalendarNote = { id: Date.now().toString(), text, dateKey: selectedDateKey };
     saveNotes([...notes, note]);
   }, [notes, saveNotes, selectedDateKey]);
+  const addEvent = useCallback((title: string) => {
+    const palette: CalendarEvent["color"][] = ["blue", "orange", "green", "purple"];
+    const sameDayEvents = events.filter(event => event.dateKey === selectedDateKey);
+    const color = palette[sameDayEvents.length % palette.length];
+    const event: CalendarEvent = { id: Date.now().toString(), title, color, dateKey: selectedDateKey };
+    saveEvents([...events, event]);
+  }, [events, saveEvents, selectedDateKey]);
 
   const removeNote = useCallback((id: string) => {
     saveNotes(notes.filter(n => n.id !== id));
   }, [notes, saveNotes]);
+  const removeEvent = useCallback((id: string) => {
+    saveEvents(events.filter(e => e.id !== id));
+  }, [events, saveEvents]);
 
   const notesForSelectedDate = useMemo(
     () => notes.filter(note => note.dateKey === selectedDateKey),
     [notes, selectedDateKey],
   );
+  const eventsForSelectedDate = useMemo(
+    () => events.filter(event => event.dateKey === selectedDateKey),
+    [events, selectedDateKey],
+  );
 
   const getNoteCountForDate = useCallback(
     (date: Date) => notes.filter(note => note.dateKey === toDateKey(date)).length,
     [notes],
+  );
+  const getEventsForDate = useCallback(
+    (date: Date) => events.filter(event => event.dateKey === toDateKey(date)),
+    [events],
   );
 
   const isToday = useCallback((date: Date) => {
@@ -102,6 +139,7 @@ export function useCalendar(initialDate?: Date) {
     range, handleDateClick, isInRange, isStart, isEnd, isToday,
     goToPrevMonth, goToNextMonth, goToToday, setMonthYear, clearSelection,
     notes, notesForSelectedDate, selectedDateKey, addNote, removeNote, getNoteCountForDate,
+    events, eventsForSelectedDate, addEvent, removeEvent, getEventsForDate,
     currentDate,
   };
 }

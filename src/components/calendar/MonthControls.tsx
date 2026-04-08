@@ -4,8 +4,22 @@ export default function MonthControls(props: {
   onMonthYearChange: (month: number, year: number) => void;
   onClearSelection: () => void;
   controlsDisabled?: boolean;
+  holidayRegion?: "none" | "india" | "global";
+  onHolidayRegionChange?: (region: "none" | "india" | "global") => void;
+  themeMode?: "light" | "dark" | "ocean";
+  onThemeModeChange?: (theme: "light" | "dark" | "ocean") => void;
 }) {
-  const { month, year, onMonthYearChange, onClearSelection, controlsDisabled } = props;
+  const {
+    month,
+    year,
+    onMonthYearChange,
+    onClearSelection,
+    controlsDisabled,
+    holidayRegion = "none",
+    onHolidayRegionChange,
+    themeMode = "light",
+    onThemeModeChange,
+  } = props;
 
   const MONTHS = [
     "JANUARY",
@@ -25,7 +39,7 @@ export default function MonthControls(props: {
   const yearOptions = Array.from({ length: 11 }, (_, i) => (year - 5) + i);
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+    <div className="mb-3 space-y-2">
       <div className="flex items-center gap-2">
         <select
           value={month}
@@ -54,14 +68,39 @@ export default function MonthControls(props: {
             </option>
           ))}
         </select>
+
+        <button
+          onClick={onClearSelection}
+          className="text-[11px] text-muted-foreground font-display font-semibold hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 rounded"
+        >
+          Clear selection
+        </button>
       </div>
 
-      <button
-        onClick={onClearSelection}
-        className="text-[11px] text-muted-foreground font-display font-semibold hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 rounded"
-      >
-        Clear selection
-      </button>
+      <div className="flex items-center gap-2">
+        <select
+          value={themeMode}
+          onChange={e => onThemeModeChange?.(e.target.value as "light" | "dark" | "ocean")}
+          className="text-[11px] rounded border border-input bg-card px-2 py-1 font-display font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+          aria-label="Theme"
+          disabled={controlsDisabled}
+        >
+          <option value="light">Theme: Light</option>
+          <option value="dark">Theme: Dark</option>
+          <option value="ocean">Theme: Ocean</option>
+        </select>
+        <select
+          value={holidayRegion}
+          onChange={e => onHolidayRegionChange?.(e.target.value as "none" | "india" | "global")}
+          className="text-[11px] rounded border border-input bg-card px-2 py-1 font-display font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+          aria-label="Holiday layer"
+          disabled={controlsDisabled}
+        >
+          <option value="none">Holidays: Off</option>
+          <option value="india">Holidays: India</option>
+          <option value="global">Holidays: Global</option>
+        </select>
+      </div>
     </div>
   );
 }

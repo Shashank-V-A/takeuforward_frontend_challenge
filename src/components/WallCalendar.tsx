@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useCalendar } from "@/hooks/useCalendar";
 import { toDateKey } from "@/lib/calendar";
+import { getHolidayForDate, type HolidayRegion } from "@/data/holidays";
 import HeroSection from "@/components/calendar/HeroSection";
 import NotesPanel from "@/components/calendar/NotesPanel";
 import MonthControls from "@/components/calendar/MonthControls";
@@ -40,12 +41,25 @@ export default function WallCalendar({ initialDate }: { initialDate?: Date } = {
     range, handleDateClick, isInRange, isStart, isEnd, isToday,
     goToPrevMonth, goToNextMonth, goToToday, setMonthYear, clearSelection,
     notesForSelectedDate, selectedDateKey, addNote, removeNote, getNoteCountForDate,
+    eventsForSelectedDate, addEvent, removeEvent, getEventsForDate,
   } = useCalendar(initialDate);
 
   const [noteInput, setNoteInput] = useState("");
+  const [eventInput, setEventInput] = useState("");
   const [flipPhase, setFlipPhase] = useState<"idle" | "out" | "in">("idle");
   const [flipDirection, setFlipDirection] = useState<"next" | "prev">("next");
+  const [holidayRegion, setHolidayRegion] = useState<HolidayRegion>("none");
+  const [themeMode, setThemeMode] = useState<"light" | "dark" | "ocean">(() => {
+    try {
+      const saved = localStorage.getItem("calendar-theme");
+      if (saved === "dark" || saved === "ocean" || saved === "light") return saved;
+    } catch {
+      // ignore localStorage issues
+    }
+    return "light";
+  });
   const noteInputRef = useRef<HTMLInputElement>(null);
+  const eventInputRef = useRef<HTMLInputElement>(null);
   const dayButtonRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
   const runFlipTransition = (dir: "prev" | "next", onMidFlip: () => void) => {
@@ -84,6 +98,12 @@ export default function WallCalendar({ initialDate }: { initialDate?: Date } = {
     setNoteInput("");
     noteInputRef.current?.focus();
   };
+  const handleAddEvent = () => {
+    if (!eventInput.trim()) return;
+    addEvent(eventInput.trim());
+    setEventInput("");
+    eventInputRef.current?.focus();
+  };
 
   const rangeLabel = range.start
     ? range.end
@@ -114,6 +134,47 @@ export default function WallCalendar({ initialDate }: { initialDate?: Date } = {
       img.src = src;
     });
   }, [month]);
+
+  // Persist and apply theme to the document root.
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.remove("dark");
+    root.removeAttribute("data-theme");
+
+    if (themeMode === "dark") root.classList.add("dark");
+    if (themeMode === "ocean") root.setAttribute("data-theme", "ocean");
+
+    localStorage.setItem("calendar-theme", themeMode);
+  }, [themeMode]);
+
+  // Global keyboard shortcuts (skip when typing in input/select/textarea).
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const tag = target?.tagName?.toLowerCase();
+      if (tag === "input" || tag === "textarea" || tag === "select") return;
+
+      if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        handleMonthChange("prev");
+      } else if (e.key === "ArrowRight") {
+        e.preventDefault();
+        handleMonthChange("next");
+      } else if (e.key.toLowerCase() === "t") {
+        e.preventDefault();
+        goToToday();
+      } else if (e.key.toLowerCase() === "n") {
+        e.preventDefault();
+        noteInputRef.current?.focus();
+      } else if (e.key.toLowerCase() === "e") {
+        e.preventDefault();
+        eventInputRef.current?.focus();
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [goToToday]);
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4 md:p-8">
@@ -179,6 +240,12 @@ export default function WallCalendar({ initialDate }: { initialDate?: Date } = {
               onAddNote={handleAddNote}
               notesForSelectedDate={notesForSelectedDate}
               removeNote={removeNote}
+              eventInput={eventInput}
+              setEventInput={setEventInput}
+              eventInputRef={eventInputRef}
+              onAddEvent={handleAddEvent}
+              eventsForSelectedDate={eventsForSelectedDate}
+              removeEvent={removeEvent}
             />
 
             {/* Calendar Grid */}
@@ -189,6 +256,10 @@ export default function WallCalendar({ initialDate }: { initialDate?: Date } = {
                 onMonthYearChange={handleMonthYearChange}
                 onClearSelection={clearSelection}
                 controlsDisabled={flipPhase !== "idle"}
+                holidayRegion={holidayRegion}
+                onHolidayRegionChange={setHolidayRegion}
+                themeMode={themeMode}
+                onThemeModeChange={setThemeMode}
               />
 
               {/* Weekday headers */}
@@ -214,6 +285,8 @@ export default function WallCalendar({ initialDate }: { initialDate?: Date } = {
                   const end = isEnd(item.date);
                   const inRange = isInRange(item.date);
                   const today = isToday(item.date);
+                  const holiday = getHolidayForDate(item.date, holidayRegion);
+                  const events = getEventsForDate(item.date);
 
                   return (
                     <button
@@ -250,6 +323,7 @@ export default function WallCalendar({ initialDate }: { initialDate?: Date } = {
                         month: "long",
                         year: "numeric",
                       })}
+                      title={holiday ?? undefined}
                       aria-selected={start || end || inRange}
                       aria-current={today ? "date" : undefined}
                       className={`
@@ -267,6 +341,30 @@ export default function WallCalendar({ initialDate }: { initialDate?: Date } = {
                       `}
                     >
                       {item.day}
+                      {events.length > 0 && item.currentMonth && (
+                        <div className="absolute top-1 left-1 right-1 flex items-center gap-0.5 justify-center" aria-hidden="true">
+                          {events.slice(0, 2).map(event => (
+                            <span
+                              key={event.id}
+                              className={`h-1.5 rounded-full flex-1 max-w-[10px] ${
+                                event.color === "orange"
+                                  ? "bg-orange-500"
+                                  : event.color === "green"
+                                    ? "bg-emerald-500"
+                                    : event.color === "purple"
+                                      ? "bg-violet-500"
+                                      : "bg-sky-500"
+                              }`}
+                            />
+                          ))}
+                        </div>
+                      )}
+                      {holiday && item.currentMonth && (
+                        <span
+                          className="absolute bottom-1.5 left-1.5 w-1.5 h-1.5 rounded-full bg-amber-500"
+                          aria-hidden="true"
+                        />
+                      )}
                       {getNoteCountForDate(item.date) > 0 && item.currentMonth && (
                         <span className="absolute bottom-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-primary" aria-hidden="true" />
                       )}
@@ -295,7 +393,18 @@ export default function WallCalendar({ initialDate }: { initialDate?: Date } = {
 function SpiralBinding() {
   const spirals = Array.from({ length: 18 });
   return (
-    <div className="relative h-6 flex items-center justify-center gap-[6px] px-4 overflow-hidden">
+    <div className="relative h-10 flex items-end justify-center gap-[6px] px-4 overflow-hidden">
+      {/* Wall nail + hanger */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 z-20" aria-hidden="true">
+        <div className="w-2.5 h-2.5 rounded-full bg-foreground/55 shadow-[0_1px_2px_rgba(0,0,0,0.35)] mx-auto" />
+        <div className="w-0 h-0 border-l-[6px] border-r-[6px] border-t-[7px] border-l-transparent border-r-transparent border-t-foreground/40 mx-auto -mt-[1px]" />
+      </div>
+      <div
+        className="absolute top-[8px] left-1/2 -translate-x-1/2 w-9 h-5 border-2 border-foreground/35 rounded-b-full rounded-t-[2px]"
+        style={{ borderTop: "none" }}
+        aria-hidden="true"
+      />
+
       {spirals.map((_, i) => (
         <div key={i} className="relative w-4 h-6 flex items-end justify-center">
           <div
