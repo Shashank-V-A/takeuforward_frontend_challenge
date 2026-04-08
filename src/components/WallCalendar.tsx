@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useCalendar } from "@/hooks/useCalendar";
 import { toDateKey } from "@/lib/calendar";
 import HeroSection from "@/components/calendar/HeroSection";
@@ -19,6 +19,20 @@ import decemberHero from "@/assets/calendar-hero-dec.png";
 import bottomLogo from "@/assets/calendar-bottom-logo.png";
 
 const WEEKDAYS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
+const HERO_BY_MONTH: Record<number, string> = {
+  0: januaryHero,   // January
+  1: februaryHero,  // February
+  2: marchHero,     // March
+  3: aprilHero,     // April
+  4: mayHero,       // May
+  5: juneHero,      // June
+  6: julyHero,      // July
+  7: augustHero,    // August
+  8: septemberHero, // September
+  9: octoberHero,   // October
+  10: novemberHero, // November
+  11: decemberHero, // December
+};
 
 export default function WallCalendar({ initialDate }: { initialDate?: Date } = {}) {
   const {
@@ -84,21 +98,21 @@ export default function WallCalendar({ initialDate }: { initialDate?: Date } = {
 
   // Month hero mapping (all years): Jan through Dec provided.
   const heroImageForMonth = useMemo(() => {
-    const byMonth: Record<number, string> = {
-      0: januaryHero,   // January
-      1: februaryHero,  // February
-      2: marchHero,     // March
-      3: aprilHero,     // April
-      4: mayHero,       // May
-      5: juneHero,      // June
-      6: julyHero,      // July
-      7: augustHero,    // August
-      8: septemberHero, // September
-      9: octoberHero,   // October
-      10: novemberHero, // November
-      11: decemberHero, // December
-    };
-    return byMonth[month];
+    return HERO_BY_MONTH[month];
+  }, [month]);
+
+  // Preload nearby month hero images to keep page flips smooth.
+  useEffect(() => {
+    const prevMonth = (month + 11) % 12;
+    const nextMonth = (month + 1) % 12;
+    const candidates = [prevMonth, nextMonth, month];
+
+    candidates.forEach(m => {
+      const src = HERO_BY_MONTH[m];
+      if (!src) return;
+      const img = new Image();
+      img.src = src;
+    });
   }, [month]);
 
   return (
