@@ -1,0 +1,107 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Open+Sans:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 20% 96%;
+    --foreground: 220 20% 20%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 20% 20%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 20% 20%;
+
+    --primary: 200 85% 48%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 210 20% 96%;
+    --secondary-foreground: 220 20% 20%;
+
+    --muted: 210 15% 93%;
+    --muted-foreground: 220 10% 50%;
+
+    --accent: 200 85% 48%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 13% 87%;
+    --input: 220 13% 87%;
+    --ring: 200 85% 48%;
+
+    --radius: 0.5rem;
+
+    --calendar-accent: 200 85% 48%;
+    --calendar-accent-light: 200 85% 92%;
+    --calendar-weekend: 200 85% 48%;
+    --calendar-grey: 220 10% 70%;
+    --calendar-line: 220 10% 85%;
+    --calendar-shadow: 220 20% 20%;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 222 30% 8%;
+    --foreground: 210 20% 92%;
+    --card: 222 25% 12%;
+    --card-foreground: 210 20% 92%;
+    --popover: 222 25% 12%;
+    --popover-foreground: 210 20% 92%;
+    --primary: 200 85% 48%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 222 20% 16%;
+    --secondary-foreground: 210 20% 92%;
+    --muted: 222 20% 16%;
+    --muted-foreground: 215 15% 55%;
+    --accent: 200 85% 48%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 210 20% 92%;
+    --border: 222 20% 20%;
+    --input: 222 20% 20%;
+    --ring: 200 85% 48%;
+    --calendar-accent: 200 85% 55%;
+    --calendar-accent-light: 200 50% 20%;
+    --calendar-weekend: 200 85% 55%;
+    --calendar-grey: 220 10% 45%;
+    --calendar-line: 222 15% 25%;
+    --calendar-shadow: 0 0% 0%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Open Sans', sans-serif;
+  }
+}
+
+@layer utilities {
+  .font-display {
+    font-family: 'Montserrat', sans-serif;
+  }
+}
